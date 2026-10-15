@@ -1,4 +1,4 @@
--- api.alquran.cloud client (mirrors the original ayah.nvim api.lua).
+-- api.alquran.cloud client.
 -- Used by the service for Quran-verse turns; offline pool stays in lib/reminders.luau.
 
 local M = {}

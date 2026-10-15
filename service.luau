@@ -164,21 +164,16 @@ local function fire()
   end
 end
 
--- Initial fetch of the online azkar pool (async; bundled fallback until loaded).
-
--- Initial fetch of the online azkar pool (async; bundled fallback until loaded).
-azkar.refresh()
+-- Boot: fetch the online azkar pool, then fire the first reminder as
+-- time-aware azkar (morning 04:00–18:00, else evening). Falls back to
+-- bundled azkar offline; honors azkar_enabled/salawat_enabled inside.
 lastAzkarFetchMs = noctalia.nowMs()
-
--- Greeting: one salawat shortly after the shell starts.
-if cfgBool("notify_on_start", true) then
-  local items = reminders.collect(true, false)
-  if #items > 0 then
-    local first = items[1]
-    noctalia.state.set("dhikr/latest", first.text)
-    noctalia.notify(first.title, first.text)
+azkar.refresh(function()
+  lastAzkarFetchMs = noctalia.nowMs()
+  if cfgBool("notify_on_start", true) then
+    fireAzkarSide()
   end
-end
+end)
 
 function update()
   local now = noctalia.nowMs()

@@ -1,9 +1,7 @@
 # Dhikr — Salawat, Azkar & Quran reminders for Noctalia
 
 Periodic desktop notifications reminding you of salawat upon the Prophet ﷺ,
-morning/evening azkar, and random Quran verses. Noctalia port of
-[ayah.nvim](https://github.com/mohammed-niri/ayah.nvim) (Neovim), extended with
-time-aware azkar.
+morning/evening azkar, and random Quran verses.
 
 | Plugin | |
 |---|---|
@@ -18,7 +16,7 @@ time-aware azkar.
 - Every Nth reminder (default 3rd) is a random Quran verse (6236, offline fallback on failure)
 - Time-aware azkar from `azkar.json`: **أذكار الصباح 04:00–18:00**, **أذكار المساء 18:00–04:00**
 - Per-notification counts for morning / evening azkar (panel-controllable, 1–10)
-- Salawat greeting on shell start (toggleable)
+- Time-aware azkar on shell start (morning/evening, toggleable)
 - Rotation (no repeats before pool cycles), offline-bundled fallback for every source
 - Bar widget `ذِكر` (click = instant reminder, tooltip = latest + countdown)
 - Control-center tile to pause / resume reminders
@@ -34,7 +32,7 @@ Open with `noctalia msg settings-open-plugin mohammed-niri/dhikr`
 | `interval` | int (1–180) | `30` | Minutes between notifications |
 | `salawat_enabled` | bool | `true` | Include salawat in rotation |
 | `azkar_enabled` | bool | `true` | Include azkar in rotation |
-| `notify_on_start` | bool | `true` | One salawat when the shell starts |
+| `notify_on_start` | bool | `true` | Time-aware azkar when the shell starts |
 | `quran_enabled` | bool | `true` | Every Nth reminder is a Quran verse |
 | `quran_every` | int (1–20) | `3` | How often the verse appears |
 | `edition` | string | `ar.abdulbasitmurattal` | Quran edition id |
@@ -47,7 +45,7 @@ Open with `noctalia msg settings-open-plugin mohammed-niri/dhikr`
 ```sh
 # install for local dev (repo root IS the plugin dir)
 mkdir -p ~/.local/share/noctalia/plugins
-ln -s /path/to/ayah.nvim ~/.local/share/noctalia/plugins/dhikr
+ln -s /path/to/zaker ~/.local/share/noctalia/plugins/dhikr
 noctalia msg plugins enable mohammed-niri/dhikr
 
 # fire a reminder now (advances the rotation)
@@ -84,6 +82,4 @@ lib/reminders.luau   <- bundled offline salawat + azkar (fallback)
 lib/quran.luau       <- alquran.cloud client + normalize
 lib/azkar.luau       <- azkar.json fetch, time category, rotation, format
 translations/en.json <- settings labels (required by manifest)
-lua/ayah/*           <- legacy Neovim plugin (untouched)
-plugin/ayah.lua      <- legacy Neovim user commands
 ```
