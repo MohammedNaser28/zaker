@@ -1,0 +1,10 @@
+{
+  "settings.interval.label": "Reminder interval",
+  "settings.interval.description": "Minutes between salawat / azkar notifications.",
+  "settings.salawat_enabled.label": "Salawat reminders",
+  "settings.salawat_enabled.description": "Include salawat upon the Prophet ﷺ in the rotation.",
+  "settings.azkar_enabled.label": "Azkar reminders",
+  "settings.azkar_enabled.description": "Include morning/evening azkar in the rotation.",
+  "settings.notify_on_start.label": "Greet on start",
+  "settings.notify_on_start.description": "Show one salawat notification when the shell starts."
+}
