@@ -1,15 +1,19 @@
 -- Headless service: rotates salawat / azkar reminders, with every Nth
 -- reminder a random Quran verse fetched from api.alquran.cloud.
--- Offline pool rotation (no repeats per cycle); Quran turns fall back
--- to the offline pool when the network fails.
+-- Azkar come from the online azkar.json pool with time-based category
+-- (morning 04:00–18:00, evening otherwise); bundled reminders stay as
+-- the offline fallback for every source.
 
 local reminders = require("./lib/reminders.luau")
 local quran = require("./lib/quran.luau")
+local azkar = require("./lib/azkar.luau")
 
 local TICK_MS = 30 * 1000
+local AZKAR_REFRESH_MS = 6 * 60 * 60 * 1000
 local cursor = 0
 local fireCount = 0
 local nextFireMs = nil
+local lastAzkarFetchMs = nil
 
 math.randomseed(noctalia.nowMs())
 noctalia.setUpdateInterval(TICK_MS)
@@ -22,16 +26,24 @@ local function intervalMs()
   return mins * 60 * 1000
 end
 
-local function pool()
-  local salawat_on = noctalia.getConfig("salawat_enabled")
-  local azkar_on = noctalia.getConfig("azkar_enabled")
-  if salawat_on == nil then
-    salawat_on = true
+local function cfgBool(key, default)
+  local v = noctalia.getConfig(key)
+  if v == nil then
+    return default
   end
-  if azkar_on == nil then
-    azkar_on = true
+  return v
+end
+
+local function cfgCount(key, default)
+  local n = noctalia.getConfig(key)
+  if type(n) ~= "number" or n < 1 then
+    return default
   end
-  return reminders.collect(salawat_on, azkar_on)
+  return math.min(n, 10)
+end
+
+local function isEnabled()
+  return noctalia.state.get("dhikr/enabled") ~= false
 end
 
 local function quranEvery()
@@ -42,23 +54,50 @@ local function quranEvery()
   return n
 end
 
-local function isEnabled()
-  return noctalia.state.get("dhikr/enabled") ~= false
-end
-
 local function publish(item)
   noctalia.state.set("dhikr/latest", item.text)
   noctalia.state.set("dhikr/kind", item.kind)
   noctalia.notify(item.title, item.text)
 end
 
-local function fireOffline()
-  local items = pool()
+local function fireBundled(salawat_on, azkar_on)
+  local items = reminders.collect(salawat_on, azkar_on)
   if #items == 0 then
-    return
+    return false
   end
   cursor = (cursor % #items) + 1
   publish(items[cursor])
+  return true
+end
+
+local function fireSalawatSide()
+  if cfgBool("salawat_enabled", true) then
+    if fireBundled(true, false) then
+      return
+    end
+  end
+  -- salawat disabled or empty: fall back to any bundled item
+  fireBundled(true, true)
+end
+
+local function fireAzkarSide()
+  if not cfgBool("azkar_enabled", true) then
+    fireSalawatSide()
+    return
+  end
+  if azkar.hasItems() then
+    local key, label = azkar.category()
+    local n = cfgCount(key == azkar.MORNING_KEY and "morning_count" or "evening_count", 3)
+    local items = azkar.take(key, n)
+    if #items > 0 then
+      publish({ kind = "dhikr", title = "🤲 " .. label, text = azkar.format(items) })
+      return
+    end
+  end
+  -- offline: bundled azkar, else anything bundled
+  if not fireBundled(false, true) then
+    fireBundled(true, true)
+  end
 end
 
 local function fireQuran()
@@ -70,13 +109,13 @@ local function fireQuran()
   local accepted = noctalia.http({ url = quran.ayahUrl(n, edition) }, function(res)
     if not res.ok or res.status ~= 200 then
       noctalia.log("dhikr quran fetch failed: ok=" .. tostring(res.ok) .. " status=" .. tostring(res.status))
-      fireOffline()
+      fireAzkarSide()
       return
     end
     local decoded, err = noctalia.json.decode(res.body)
     if decoded == nil or decoded.code ~= 200 or decoded.data == nil then
       noctalia.log("dhikr quran decode failed: " .. tostring(err))
-      fireOffline()
+      fireAzkarSide()
       return
     end
     local ayah = quran.normalize(decoded.data, edition)
@@ -105,26 +144,35 @@ local function fireQuran()
   end)
   if not accepted then
     noctalia.log("dhikr quran request not accepted")
-    fireOffline()
+    fireAzkarSide()
   end
 end
 
 local function fire()
   fireCount = fireCount + 1
-  local quranOn = noctalia.getConfig("quran_enabled")
-  if quranOn == nil then
-    quranOn = true
-  end
-  if quranOn and (fireCount % quranEvery()) == 0 then
+  local quranOn = cfgBool("quran_enabled", true)
+  local every = quranEvery()
+  if quranOn and (fireCount % every) == 0 then
     fireQuran()
+    return
+  end
+  -- non-quran turns alternate salawat / azkar so both keep appearing
+  if (fireCount % 2) == 0 then
+    fireAzkarSide()
   else
-    fireOffline()
+    fireSalawatSide()
   end
 end
 
+-- Initial fetch of the online azkar pool (async; bundled fallback until loaded).
+
+-- Initial fetch of the online azkar pool (async; bundled fallback until loaded).
+azkar.refresh()
+lastAzkarFetchMs = noctalia.nowMs()
+
 -- Greeting: one salawat shortly after the shell starts.
-if noctalia.getConfig("notify_on_start") ~= false then
-  local items = pool()
+if cfgBool("notify_on_start", true) then
+  local items = reminders.collect(true, false)
   if #items > 0 then
     local first = items[1]
     noctalia.state.set("dhikr/latest", first.text)
@@ -133,10 +181,14 @@ if noctalia.getConfig("notify_on_start") ~= false then
 end
 
 function update()
+  local now = noctalia.nowMs()
+  if lastAzkarFetchMs == nil or (now - lastAzkarFetchMs) >= AZKAR_REFRESH_MS then
+    azkar.refresh()
+    lastAzkarFetchMs = now
+  end
   if not isEnabled() then
     return
   end
-  local now = noctalia.nowMs()
   if nextFireMs == nil then
     nextFireMs = now + intervalMs()
     return
@@ -153,6 +205,9 @@ function onIpc(event, _payload)
   if event == "now" then
     fire()
     nextFireMs = noctalia.nowMs() + intervalMs()
+  elseif event == "refresh" then
+    azkar.refresh()
+    lastAzkarFetchMs = noctalia.nowMs()
   elseif event == "reset" then
     nextFireMs = nil
     cursor = 0

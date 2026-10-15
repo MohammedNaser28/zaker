@@ -68,6 +68,24 @@ label_key = "settings.translation_edition.label"
 description_key = "settings.translation_edition.description"
 default = ""
 
+[[setting]]
+key = "morning_count"
+type = "int"
+label_key = "settings.morning_count.label"
+description_key = "settings.morning_count.description"
+default = 3
+min = 1
+max = 10
+
+[[setting]]
+key = "evening_count"
+type = "int"
+label_key = "settings.evening_count.label"
+description_key = "settings.evening_count.description"
+default = 3
+min = 1
+max = 10
+
 [[service]]
 id = "remind"
 entry = "service.luau"

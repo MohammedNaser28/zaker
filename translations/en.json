@@ -14,5 +14,9 @@
   "settings.edition.label": "Quran edition",
   "settings.edition.description": "Edition id for verse text, e.g. ar.abdulbasitmurattal.",
   "settings.translation_edition.label": "Translation edition",
-  "settings.translation_edition.description": "Extra edition appended to the verse, e.g. en.asad. Empty disables it."
+  "settings.translation_edition.description": "Extra edition appended to the verse, e.g. en.asad. Empty disables it.",
+  "settings.morning_count.label": "Morning azkar per reminder",
+  "settings.morning_count.description": "How many morning azkar (04:00-18:00) each notification shows.",
+  "settings.evening_count.label": "Evening azkar per reminder",
+  "settings.evening_count.description": "How many evening azkar (18:00-04:00) each notification shows."
 }
