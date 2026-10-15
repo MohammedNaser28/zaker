@@ -31,6 +31,31 @@ local function curl_json(url)
   return decoded.data, nil
 end
 
+local function clean_text(s)
+  if type(s) ~= "string" then
+    return ""
+  end
+  -- api prefixes ayah text with a BOM (U+FEFF), renders as <feff> box
+  if s:sub(1, 3) == "\239\187\191" then
+    s = s:sub(4)
+  end
+  return s
+end
+
+local function clean_audio(data)
+  if type(data.audio) == "string" and data.audio ~= "" then
+    return data.audio
+  end
+  local sec = data.audioSecondary
+  if type(sec) == "string" then
+    return sec
+  end
+  if type(sec) == "table" and type(sec[1]) == "string" then
+    return sec[1]
+  end
+  return ""
+end
+
 ---@param data table raw `data` object
 ---@param fallback_edition string
 ---@return AyahData
@@ -38,12 +63,12 @@ function M.normalize(data, fallback_edition)
   local surah = data.surah or {}
   return {
     number = data.number,
-    text = data.text,
-    surah_name = surah.name or "",
+    text = clean_text(data.text),
+    surah_name = clean_text(surah.name or ""),
     surah_english = surah.englishName or "",
     number_in_surah = data.numberInSurah,
     revelation = surah.revelationType or "",
-    audio = data.audio or data.audioSecondary or "",
+    audio = clean_audio(data),
     edition = (data.edition and data.edition.identifier) or fallback_edition,
   }
 end
@@ -78,7 +103,7 @@ function M.attach_translation(ayah, translation_edition)
   if not data then
     return err
   end
-  ayah.translation = data.text
+  ayah.translation = clean_text(data.text)
   return nil
 end
 

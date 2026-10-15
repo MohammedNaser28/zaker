@@ -13,7 +13,7 @@
 ---@field basmalah_on_start AyahBasmalahOpts
 ---@field audio_player string|nil "mpv"|"mpg123"|"ffplay", nil = auto-detect
 ---@field notify_level integer vim.log.levels.*
----@field float table win opts: width, height, border
+---@field float table win opts: width, height, border, rtl
 
 local M = {}
 
@@ -34,6 +34,7 @@ M.defaults = {
     width = 0.7, -- fraction of `columns` when < 1, else absolute
     height = 0.4,
     border = "rounded",
+    rtl = true, -- right-to-left Arabic rendering in :AyahDetails float
   },
 }
 

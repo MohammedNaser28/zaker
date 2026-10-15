@@ -2,6 +2,18 @@
 
 local M = {}
 
+-- U+2067 RIGHT-TO-LEFT ISOLATE .. U+2069 POP DIRECTIONAL ISOLATE.
+-- Forces an RTL paragraph for the Arabic text even in LTR popups
+-- (vim.notify backends like nvim-notify / snacks have no RTL window opt).
+local RLI = "\226\129\167" -- U+2067
+local PDI = "\226\129\169" -- U+2069
+
+---@param text string
+---@return string isolated RTL paragraph
+function M.rtl(text)
+  return RLI .. text .. PDI
+end
+
 ---@param ayah AyahData
 ---@return string header line
 function M.header(ayah)
@@ -20,7 +32,7 @@ end
 ---@param ayah AyahData
 ---@param level integer|nil
 function M.notify(ayah, level)
-  vim.notify(ayah.text, level or vim.log.levels.INFO, {
+  vim.notify(M.rtl(ayah.text), level or vim.log.levels.INFO, {
     title = "[ayah] " .. M.header(ayah),
     timeout = 15000,
   })
@@ -57,7 +69,7 @@ function M.open_float(ayah, float_opts)
 
   vim.bo[bufnr].filetype = "ayah"
   vim.bo[bufnr].modifiable = true
-  local lines = { ayah.text, "", M.header(ayah) }
+  local lines = { M.rtl(ayah.text), "", M.header(ayah) }
   if ayah.translation and ayah.translation ~= "" then
     vim.list_extend(lines, { "", "— " .. ayah.translation })
   end
@@ -65,6 +77,28 @@ function M.open_float(ayah, float_opts)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(table.concat(lines, "\n"), "\n"))
   vim.bo[bufnr].modifiable = false
   vim.bo[bufnr].readonly = true
+
+  -- RTL rendering for the Arabic float. `rightleft`/`arabic` are
+  -- window-local; `arabicshape`/`termbidi` are global and only enabled
+  -- here (never force-disabled) so Arabic joins correctly in terminals
+  -- without native bidi. Disable via `setup({ float = { rtl = false } })`.
+  vim.wo[winid].wrap = true
+  vim.wo[winid].linebreak = true
+  vim.wo[winid].number = false
+  vim.wo[winid].relativenumber = false
+  vim.wo[winid].cursorline = false
+  if float_opts.rtl ~= false then
+    vim.wo[winid].rightleft = true
+    vim.wo[winid].arabic = true
+    if vim.o.arabicshape == false then
+      vim.o.arabicshape = true
+    end
+    if vim.o.termbidi == false then
+      pcall(function()
+        vim.o.termbidi = true
+      end)
+    end
+  end
 
   return bufnr, winid
 end
