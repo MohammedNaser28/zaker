@@ -6,5 +6,13 @@
   "settings.azkar_enabled.label": "Azkar reminders",
   "settings.azkar_enabled.description": "Include morning/evening azkar in the rotation.",
   "settings.notify_on_start.label": "Greet on start",
-  "settings.notify_on_start.description": "Show one salawat notification when the shell starts."
+  "settings.notify_on_start.description": "Show one salawat notification when the shell starts.",
+  "settings.quran_enabled.label": "Quran verse reminders",
+  "settings.quran_enabled.description": "Every Nth reminder is a random Quran verse from api.alquran.cloud.",
+  "settings.quran_every.label": "Quran every N reminders",
+  "settings.quran_every.description": "How often a Quran verse appears in the rotation.",
+  "settings.edition.label": "Quran edition",
+  "settings.edition.description": "Edition id for verse text, e.g. ar.abdulbasitmurattal.",
+  "settings.translation_edition.label": "Translation edition",
+  "settings.translation_edition.description": "Extra edition appended to the verse, e.g. en.asad. Empty disables it."
 }

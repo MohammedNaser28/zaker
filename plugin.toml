@@ -38,6 +38,36 @@ label_key = "settings.notify_on_start.label"
 description_key = "settings.notify_on_start.description"
 default = true
 
+[[setting]]
+key = "quran_enabled"
+type = "bool"
+label_key = "settings.quran_enabled.label"
+description_key = "settings.quran_enabled.description"
+default = true
+
+[[setting]]
+key = "quran_every"
+type = "int"
+label_key = "settings.quran_every.label"
+description_key = "settings.quran_every.description"
+default = 3
+min = 1
+max = 20
+
+[[setting]]
+key = "edition"
+type = "string"
+label_key = "settings.edition.label"
+description_key = "settings.edition.description"
+default = "ar.abdulbasitmurattal"
+
+[[setting]]
+key = "translation_edition"
+type = "string"
+label_key = "settings.translation_edition.label"
+description_key = "settings.translation_edition.description"
+default = ""
+
 [[service]]
 id = "remind"
 entry = "service.luau"
